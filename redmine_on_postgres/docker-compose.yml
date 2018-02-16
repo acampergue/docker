@@ -1,0 +1,57 @@
+version: '3.1'
+
+services:
+
+  # Redmine is a flexible project management web application written using Ruby on Rails framework
+  # https://hub.docker.com/_/redmine/
+  redmine:
+    image: redmine:3.4.3
+    restart: unless-stopped
+    ports:
+      - "8080:3000"
+    environment:
+      REDMINE_DB_POSTGRES: "db"
+      REDMINE_DB_PORT: "5432"
+      REDMINE_DB_DATABASE: "redmine_db"
+      REDMINE_DB_USERNAME: "redmine_user"
+      REDMINE_DB_PASSWORD: "${REDMINE_DATABASE_PASSWORD}"
+    volumes:
+      - "${REDMINE_FILES_DATA_DIRECTORY}:/usr/src/redmine/files"
+    links:
+      - "postgresql:db"
+    networks:
+      - frontend
+      - backend
+
+  # The PostgreSQL object-relational database system provides reliability and data integrity.
+  # https://hub.docker.com/_/postgres/
+  postgresql:
+    image: postgres:10.0-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: "redmine_user"
+      POSTGRES_DB: "redmine_db"
+      POSTGRES_PASSWORD: "${REDMINE_DATABASE_PASSWORD}"
+      PGDATA: "/var/lib/postgresql/data/redminedata"
+    volumes:
+      - "${REDMINE_DATABASE_DATA_DIRECTORY}:/var/lib/postgresql/data/redminedata"
+    networks:
+      - backend
+
+  # Database management in a single PHP file.
+  # https://hub.docker.com/_/adminer/
+  adminer:
+    image: adminer:4.3.1-standalone
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    links:
+      - "postgresql:db"
+    command: php -S 0.0.0.0:8080 -t /var/www/html
+    networks:
+      - frontend
+      - backend
+
+networks:
+  frontend:
+  backend:
